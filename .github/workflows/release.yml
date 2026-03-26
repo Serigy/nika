@@ -41,25 +41,26 @@ jobs:
           fetch-depth: 0
 
       - name: Validar versao
+        id: version_meta
         shell: bash
         run: |
-          VERSION="${{ inputs.version }}"
-          if [[ ! "$VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Versao invalida: $VERSION"
-            echo "Use formato vX.Y.Z ou X.Y.Z"
+          RAW_VERSION="${{ inputs.version }}"
+          NORMALIZED="${RAW_VERSION#v}"
+          NORMALIZED="${NORMALIZED#.}"
+
+          if [[ ! "$NORMALIZED" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Versao invalida: $RAW_VERSION"
+            echo "Use formato vX.Y.Z, X.Y.Z, vX.Y.Z-alpha.N ou X.Y.Z-alpha.N"
             exit 1
           fi
+
+          echo "normalized=$NORMALIZED" >> "$GITHUB_OUTPUT"
 
       - name: Normalizar tag
         id: tag
         shell: bash
         run: |
-          VERSION="${{ inputs.version }}"
-          if [[ "$VERSION" =~ ^v ]]; then
-            TAG="$VERSION"
-          else
-            TAG="v$VERSION"
-          fi
+          TAG="v${{ steps.version_meta.outputs.normalized }}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Resolver versao LuaRocks
