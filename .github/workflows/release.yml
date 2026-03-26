@@ -1,0 +1,128 @@
+name: Release and Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versao da release (ex: v1.0.0)"
+        required: true
+        type: string
+      prerelease:
+        description: "Marcar como pre-release"
+        required: false
+        default: false
+        type: boolean
+      generate_release_notes:
+        description: "Gerar release notes automaticamente"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-manual-${{ github.workflow }}-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validar versao
+        shell: bash
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [[ ! "$VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Versao invalida: $VERSION"
+            echo "Use formato vX.Y.Z ou X.Y.Z"
+            exit 1
+          fi
+
+      - name: Normalizar tag
+        id: tag
+        shell: bash
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [[ "$VERSION" =~ ^v ]]; then
+            TAG="$VERSION"
+          else
+            TAG="v$VERSION"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Verificar se tag ja existe
+        id: tag_check
+        shell: bash
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Criar e publicar tag
+        if: ${{ steps.tag_check.outputs.exists != 'true' }}
+        shell: bash
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+      - name: Tag ja existente
+        if: ${{ steps.tag_check.outputs.exists == 'true' }}
+        run: echo "Tag ${{ steps.tag.outputs.tag }} ja existe. Workflow seguira para validar release."
+
+      - name: Verificar se release ja existe
+        id: existing_release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ steps.tag.outputs.tag }}';
+            try {
+              await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag
+              });
+              core.setOutput('exists', 'true');
+            } catch (err) {
+              if (err.status === 404) {
+                core.setOutput('exists', 'false');
+                return;
+              }
+              throw err;
+            }
+
+      - name: Gerar pacotes da release
+        if: ${{ steps.existing_release.outputs.exists != 'true' }}
+        shell: bash
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          mkdir -p dist
+          git archive --format=zip --output "dist/nika-${TAG}.zip" "$TAG"
+          git archive --format=tar.gz --output "dist/nika-${TAG}.tar.gz" "$TAG"
+
+      - name: Criar GitHub Release
+        if: ${{ steps.existing_release.outputs.exists != 'true' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          prerelease: ${{ inputs.prerelease }}
+          generate_release_notes: ${{ inputs.generate_release_notes }}
+          files: |
+            dist/*.zip
+            dist/*.tar.gz
+
+      - name: Release ja existente
+        if: ${{ steps.existing_release.outputs.exists == 'true' }}
+        run: echo "Release para a tag ${{ steps.tag.outputs.tag }} ja existe. Encerrando sem erro."
