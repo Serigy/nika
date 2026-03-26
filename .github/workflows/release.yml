@@ -173,6 +173,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y luarocks lua5.4
+          sudo luarocks install dkjson
+          luarocks show dkjson
 
       - name: Gerar rockspec
         if: ${{ inputs.publish_luarocks == true && steps.existing_release.outputs.exists != 'true' }}
