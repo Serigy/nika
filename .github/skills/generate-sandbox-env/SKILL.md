@@ -11,11 +11,13 @@ user-invocable: true
 Retorna código Lua para inicialização de ambiente estrito de template com base em uma allow-list:
 - variante Lua 5.2+ com `load(..., env)` usando tabela de ambiente restrita
 - variante Lua 5.1 com `setfenv` em wrapper seguro
+- execução previsível e auditável alinhada ao objetivo de segurança inspirado em Go templates (sem mudar sintaxe ASP do Nika)
 
 ## Quando usar
 - Construção de motor de template no Nika com isolamento de escopo.
 - Revisão de segurança para evitar acesso a `_G`, `io`, `os`, `require` e bibliotecas perigosas.
 - Geração rápida de boilerplate auditável para sandbox de execução.
+- Evolução incremental de comportamento seguro em templates mantendo simplicidade do core.
 
 ## Entrada esperada
 - Array de strings com símbolos permitidos.
@@ -42,17 +44,24 @@ Retorna código Lua para inicialização de ambiente estrito de template com bas
 - Incluir `pcall` na execução.
 - Retornar erro interno sem vazar stack trace para usuário final.
 
+6. Declarar aderência por fase (Go-inspired).
+- BASELINE: isolamento forte e execução determinística.
+- PARCIAL: controles básicos presentes, mas sem garantias de escaping por contexto.
+- BLOQUEADO: exposição de globais perigosas ou comportamento não determinístico.
+
 ## Regras de decisão
 - Se a allow-list contiver qualquer símbolo proibido: bloquear geração e retornar código com erro explícito de validação.
 - Se houver símbolo hierárquico inválido: bloquear geração e listar o item inválido.
 - Se a allow-list estiver vazia: gerar ambiente mínimo sem APIs de sistema.
 - Nunca expor tabelas globais completas por conveniência.
+- Nunca mudar sintaxe de template para `{{ }}` neste fluxo; foco é sandbox e previsibilidade de execução.
 
 ## Critérios de qualidade e conclusão
 - O código gerado deve conter validação de allow-list.
 - O código gerado deve bloquear acesso a símbolos fora da lista.
 - Deve haver variante para Lua 5.2+ e Lua 5.1.
 - O snippet deve ser pronto para uso e auditável.
+- O resultado deve preservar execução determinística e sem estado global implícito.
 
 ## Formato de saída obrigatório
 - Entregar apenas código Lua.

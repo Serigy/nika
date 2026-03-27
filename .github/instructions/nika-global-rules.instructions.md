@@ -19,6 +19,8 @@ applyTo: ["**/*.lua", "**/*.nika"]
 5. Agnosticismo HTTP no core: nao usar `ngx.*` ou APIs especificas de servidor; manter contrato req/res.
 6. Performance de string: proibido `..` em loops de renderizacao; usar `table.insert(buffer, str)` e `table.concat(buffer)`.
 7. Auditoria e erros: falhas de seguranca, input invalido e erros de sistema devem ser logados (ex.: `nika_audit.log_security` e `nika_audit.log_error`); nao expor stack trace ao usuario final; usar `pcall` em areas de risco.
+8. Templates `.nika` mantem sintaxe ASP (`<% %>`, `<%= %>`). `html/template` e `text/template` do Go sao referencia de comportamento seguro (escaping/contexto), adotado por fases, sem promessa de paridade 1:1 imediata.
+9. Mudanca em parser/renderizacao deve incluir validacao de regressao XSS/SSTI com payloads de contexto (HTML texto, atributo, URL, JS e CSS quando aplicavel).
 
 ## Fluxo de Trabalho Exigido
 - Se a solicitacao for criar feature, perguntar antes se a arquitetura ja foi validada contra ISO 27001.
