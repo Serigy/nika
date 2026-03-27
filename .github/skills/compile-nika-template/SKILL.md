@@ -11,11 +11,13 @@ user-invocable: true
 - String de código Lua compilado a partir de um template `.nika`.
 - Saída otimizada para renderização com buffer (`table.insert`) e concatenação final (`table.concat`).
 - Função `write` para escrita controlada no buffer.
+- Compatibilidade com sintaxe ASP do Nika e baseline de segurança inspirado em Go templates.
 
 ## Quando usar
 - Converter templates estáticos/dinâmicos do Nika em Lua puro para execução.
 - Pré-compilar templates para reduzir custo em runtime.
 - Revisar se a transformação preserva o fluxo do modelo ASP-like (`<% ... %>`, `<%= ... %>`).
+- Evoluir comportamento de segurança em direção ao `html/template` e `text/template` (por fases).
 
 ## Entrada esperada
 - String com o conteúdo integral do arquivo `.nika`.
@@ -23,7 +25,7 @@ user-invocable: true
 ## Gramática suportada
 - Texto literal: emitido como `write("...")`.
 - Bloco de código: `<% ... %>`.
-- Expressão com saída: `<%= expr %>` (emitida como `write(expr)`).
+- Expressão com saída: `<%= expr %>` (emitida como `write(escape(expr))` no baseline seguro).
 
 ## Procedimento
 1. Tokenizar o template.
@@ -36,7 +38,7 @@ user-invocable: true
 3. Converter cada token.
 - Literal: escapar conteúdo e gerar `write("...")`.
 - Código (`<% %>`): inserir bloco Lua bruto no fluxo.
-- Expressão (`<%= %>`): gerar `write(expr)`.
+- Expressão (`<%= %>`): gerar `write(escape(expr))`.
 
 4. Finalizar chunk compilado.
 - Adicionar `return table.concat(__buf)` ao final.
@@ -45,6 +47,7 @@ user-invocable: true
 5. Aplicar otimizações seguras.
 - Mesclar literais adjacentes em um único `write` quando possível.
 - Evitar concatenação `..` em loop de renderização.
+- Não alterar sintaxe para `{{ }}`; manter semântica ASP do Nika.
 
 ## Regras de decisão
 - Se houver tag aberta sem fechamento (`<%` sem `%>`): retornar erro de compilação com posição aproximada.
@@ -57,6 +60,8 @@ user-invocable: true
 - Toda escrita de saída deve passar por `write`.
 - Deve haver `table.insert` no buffer e `table.concat` no retorno.
 - A transformação deve preservar a ordem de renderização do template original.
+- Saída dinâmica em `<%= %>` deve preservar baseline de escape obrigatório.
+- Quando solicitado contexto avançado (JS/URL/CSS), declarar status de aderência (`BASELINE` ou `PARCIAL`) e não prometer paridade 1:1 imediata.
 
 ## Formato de saída obrigatório
 - Retornar somente uma string com código Lua compilado.
@@ -80,3 +85,4 @@ return table.concat(__buf)
 - Não introduzir dependências externas.
 - Não executar o template durante compilação.
 - Não misturar responsabilidades de sandbox nesta skill; foco exclusivo em compilação.
+- Não migrar sintaxe do template para `{{ }}`.

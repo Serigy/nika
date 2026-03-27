@@ -1,51 +1,106 @@
-### Fase 1: Fundação e Rastreabilidade (ISO 27001)
-Antes de processar qualquer requisição, o framework precisa saber como registrar eventos de segurança e como empacotar os dados de entrada e saída no formato agnóstico.
+# ROADMAP Nika
 
-| Tarefa | Descrição | Agente Responsável | Definition of Done (DoD) |
-| :--- | :--- | :--- | :--- |
-| **1. Módulo de Auditoria (`nika_audit.lua`)** | Criar o sistema de logs imutáveis para falhas de sistema (`log_error`) e anomalias de acesso (`log_security`). | 💻 **Desenvolvedor** | Módulo escreve logs estruturados (JSON ou texto formatado) com timestamp, sem quebrar a execução (usando `pcall`). |
-| **2. Revisão de Trilha de Auditoria** | Validar se os logs contêm contexto suficiente para a ISO 27001 (Anexo A.14), sem vazar dados sensíveis (senhas, tokens). | 🛡️ **Arquiteto** | Relatório de aprovação garantindo que não há vazamento de PII nos logs gerados. |
-| **3. Fábrica de Request/Response** | Definir as tabelas base genéricas `req` (method, path, query, body) e `res` (status, headers, body). | 💻 **Desenvolvedor** | Estruturas de dados criadas com metatables defensivas (read-only onde aplicável). |
+## Objetivo Macro
+Construir um framework web Lua minimalista e auditável, mantendo sintaxe ASP em `.nika` (`<% %>`, `<%= %>`) e atingindo paridade comportamental 1:1 com `html/template` e `text/template` do Go em segurança e previsibilidade (por fases, sem migração para `{{ }}`).
 
----
-
-### Fase 2: O Motor ASP (Parser & Sandbox)
-O coração do Nika. É aqui que garantimos que o desenvolvedor final terá a experiência do ASP Clássico sem abrir brechas para injeção de código (RCE/SSTI).
-
-| Tarefa | Descrição | Agente Responsável | Definition of Done (DoD) |
-| :--- | :--- | :--- | :--- |
-| **1. Parser de Templates (`parser.lua`)** | Converter o arquivo `.nika` em código Lua puro, transformando `<%= %>` em chamadas seguras envelopadas por `escape()`. | 💻 **Desenvolvedor** | Parser lê HTML com Lua, otimiza com `table.insert` e retorna string Lua válida. Zero concatenação `..` em loops. |
-| **2. Validação contra SSTI/XSS** | Tentar quebrar o parser enviando strings maliciosas e aspas não escapadas para avaliar vazamento de contexto. | 🛡️ **Arquiteto** | Aprovação de segurança confirmando que código injetado via HTML vira string literal (`%q`). |
-| **3. Motor de Sandbox (`sandbox.lua`)** | Implementar o carregamento do código compilado isolado (`load` com `_ENV` ou `setfenv`), restringindo globais. | 💻 **Desenvolvedor** | Template roda sem acesso a `os`, `io`, `require` ou `_G`. Apenas a *allow-list* da API Nika está visível. |
+## Status Geral
+- ✅ Fases 1 a 5 concluídas (MVP funcional e publicado).
+- ✅ Suite de integração e regressão de segurança ativa.
+- ✅ Pipeline de release (GitHub Release + pacote LuaRocks) configurado.
+- ⏳ Próxima frente: paridade comportamental 1:1 de template engine (Go-inspired).
 
 ---
 
-### Fase 3: Ciclo de Vida e Interceptação
-Com a renderização segura, precisamos direcionar a requisição correta para o arquivo correto e permitir a interceptação (autenticação, rate limit) de forma controlada.
+## Fases Concluídas (Histórico)
 
-| Tarefa | Descrição | Agente Responsável | Definition of Done (DoD) |
-| :--- | :--- | :--- | :--- |
-| **1. Roteador Minimalista (`router.lua`)** | Mapear `req.path` para o arquivo `.nika` correspondente no sistema de arquivos. Prevenir Path Traversal. | 💻 **Desenvolvedor** | Roteador resolve a URL para o path físico. Retorna 404 seguro se o arquivo não existir. |
-| **2. Motor de Hooks (`hooks.lua`)** | Criar a estrutura para os 3 estágios permitidos: `before_request`, `before_render`, `after_request`. | 💻 **Desenvolvedor** | Hooks executam sequencialmente em `pcall`. Retorno `true` dá *short-circuit* imediato na requisição. |
-| **3. Hook de Security Headers** | Implementar o hook nativo de `after_request` injetando CSP, HSTS, X-Frame-Options, etc. | 🛡️ **Arquiteto** | Hook padrão criado e validado contra OWASP Top 10 e compliance básico ISO. |
+### Fase 1: Fundação e Rastreabilidade (ISO 27001) — ✅ Concluída
+| Entrega | Arquivo | Evidência |
+| :--- | :--- | :--- |
+| Auditoria estruturada (`log_error`, `log_security`) | `src/nika_audit.lua` | `docs/PHASE1_A14_VALIDATION.md` |
+| Fábrica req/res com defesa básica | `src/nika_io.lua` | `docs/PHASE1_A14_VALIDATION.md` |
+
+### Fase 2: Motor ASP (Parser + Sandbox) — ✅ Concluída
+| Entrega | Arquivo | Evidência |
+| :--- | :--- | :--- |
+| Compilação `.nika` para Lua com buffer | `src/parser.lua` | `docs/PHASE2_SECURITY_VALIDATION.md` |
+| Sandbox restrito de execução | `src/sandbox.lua` | `docs/PHASE2_SECURITY_VALIDATION.md` |
+
+### Fase 3: Ciclo de Vida e Interceptação — ✅ Concluída
+| Entrega | Arquivo | Evidência |
+| :--- | :--- | :--- |
+| Roteamento com bloqueio de traversal | `src/router.lua` | `docs/PHASE3_SECURITY_VALIDATION.md` |
+| Engine de hooks e short-circuit seguro | `src/hooks.lua` | `docs/PHASE3_SECURITY_VALIDATION.md` |
+| Hook nativo de security headers | `hooks/security_headers.lua` | `docs/PHASE3_SECURITY_VALIDATION.md` |
+
+### Fase 4: Camada de Dados Agnóstica — ✅ Concluída
+| Entrega | Arquivo | Evidência |
+| :--- | :--- | :--- |
+| Wrapper de banco com prepared statements obrigatórios | `src/db.lua` | `docs/PHASE4_SQLI_VALIDATION.md` |
+
+### Fase 5: Integração e Lançamento do MVP — ✅ Concluída
+| Entrega | Arquivo | Evidência |
+| :--- | :--- | :--- |
+| Entrypoint orquestrando pipeline completo | `src/nika.lua` | `docs/PHASE5_FINAL_REVIEW.md` |
+| Adapter CGI de referência | `src/adapter_cgi.lua` | `docs/PHASE5_FINAL_REVIEW.md` |
+| Quickstart, contribuição e licença | `README.md`, `CONTRIBUTING.md`, `LICENSE.txt` | Repositório |
+
+### Qualidade e Operação — ✅ Concluída
+| Entrega | Arquivo |
+| :--- | :--- |
+| Testes estilo Busted (runner local) | `tests/` |
+| Smoke de execução CGI | `scripts/smoke_cgi.lua` |
+| Release pipelines | `.github/workflows/release.yml`, `.github/workflows/release-on-tag.yml` |
 
 ---
 
-### Fase 4: Camada de Dados (Database Agnostic)
-A última fronteira do MVP é permitir que o template acesse dados sem permitir SQL Injection.
+## Próximas Fases: Paridade 1:1 Go Templates (Comportamental)
 
-| Tarefa | Descrição | Agente Responsável | Definition of Done (DoD) |
-| :--- | :--- | :--- | :--- |
-| **1. Wrapper de Banco de Dados (`db.lua`)** | Criar a interface padrão do Nika para comunicação com drivers (ex: LuaSQL ou FFI). Exigir uso de Prepared Statements (`?`). | 💻 **Desenvolvedor** | Módulo rejeita qualquer tentativa de query dinâmica. Aceita apenas a query parametrizada e o array de valores. |
-| **2. Auditoria de SQL Injection** | Revisar o wrapper para garantir que não há bypass possível que permita concatenação de strings na query final. | 🛡️ **Arquiteto** | Pentest estático aprovando que queries malformadas acionam o `nika_audit` e retornam erro seguro. |
+## Fase 6: Paridade Baseline Formal (HTML/Text) — ✅ Concluída
+Objetivo: formalizar baseline já existente e fechar lacunas de previsibilidade.
+
+| Tarefa | Descrição | Definition of Done |
+| :--- | :--- | :--- |
+| 6.1 Matriz de Contextos — ✅ Concluída | Definir matriz oficial de contextos de saída (`html_text`, `html_attr`, `url`, `js`, `css`) e regras de escape por contexto. | `docs/TEMPLATE_CONTEXT_MATRIX.md` publicado. |
+| 6.2 Contrato de Parser — ✅ Concluída | Fixar contrato de compilação para `<%= %>` com metadados de contexto sem alterar sintaxe ASP. | `src/parser.lua` emitindo contexto (`HTML_TEXT`, `HTML_ATTR_QUOTED`, `URL_ATTR`, `JS_STRING`, `CSS_STRING`) e bloqueio runtime para contextos não suportados. |
+| 6.3 Testes de Baseline — ✅ Concluída | Expandir regressão para payloads por contexto. | `tests/security_regression_spec.lua` cobrindo matriz mínima com validação no runtime; `lua tests/run_all.lua` verde. |
+
+## Fase 7: Context-Aware Escaping (Go-inspired) — ⏳ Em Planejamento
+Objetivo: aproximar comportamento de `html/template` na prática.
+
+| Tarefa | Descrição | Definition of Done |
+| :--- | :--- | :--- |
+| 7.1 Escape por contexto | Implementar funções de escape dedicadas por contexto no runtime. | Casos de `html_text`, `attr`, `url`, `js`, `css` com testes de injeção aprovados. |
+| 7.2 Seleção determinística | Resolver contexto de saída de forma determinística no compilador, sem mágica implícita. | Resultado reproduzível e auditável entre runs. |
+| 7.3 Compatibilidade retroativa | Preservar templates ASP existentes com fallback seguro. | Zero quebra em templates atuais do MVP. |
+
+## Fase 8: Features de Template Inspiradas em Go — ⏳ Em Planejamento
+Objetivo: elevar expressividade sem perder simplicidade.
+
+| Tarefa | Descrição | Definition of Done |
+| :--- | :--- | :--- |
+| 8.1 Registry de funções | Definir registry explícito de funções de template (allow-list). | Sem acesso a globais perigosas; API documentada. |
+| 8.2 Blocos reutilizáveis | Adicionar blocos/parciais com semântica previsível e sem ocultar fluxo. | Implementação simples, auditável, sem DSL excessiva. |
+| 8.3 Modo text/template | Criar modo sem auto-escape HTML para casos estritamente textuais. | Modo explícito, isolado e coberto por testes. |
+
+## Fase 9: Validação 1:1 e Hardening Final — ⏳ Em Planejamento
+Objetivo: concluir meta de paridade comportamental.
+
+| Tarefa | Descrição | Definition of Done |
+| :--- | :--- | :--- |
+| 9.1 Suite de equivalência | Criar suite de comparação Nika vs comportamentos esperados de Go templates. | Diferenças conhecidas documentadas e justificadas. |
+| 9.2 Pentest final de template engine | Reexecutar auditoria completa XSS/SSTI em todos contextos. | Relatório final sem bloqueadores críticos. |
+| 9.3 Selo 1:1 comportamental | Publicar documento de conformidade final. | `docs/` com checklist fechado e assinatura de aprovação. |
 
 ---
 
-### Fase 5: Integração e Lançamento do MVP
-Unindo as peças isoladas em um servidor web real para provar o conceito.
+## Critérios de Não Regressão (Sempre Ativos)
+1. Sem dependências externas no core (exceto exceções explicitamente aprovadas).
+2. Sem SQL concatenado com input do usuário.
+3. Sem exposição de `_G`, `require`, `io`, `os` no contexto de template.
+4. Sem quebra do contrato agnóstico req/res.
+5. Sem promessa de paridade 1:1 imediata sem evidência de teste por contexto.
 
-| Tarefa | Descrição | Agente Responsável | Definition of Done (DoD) |
-| :--- | :--- | :--- | :--- |
-| **1. Entrypoint Principal (`nika.lua`)** | Orquestrar o fluxo: Hook (before) -> Roteador -> Hook (render) -> Sandbox -> Hook (after) -> Retorno. | 💻 **Desenvolvedor** | Fluxo de dados entra e sai limpo, sem perda de estado ou mutação indesejada. |
-| **2. Adapter de Servidor Web** | Escrever a "cola" entre um servidor web simples (ex: Xavante, ou um script CGI puro) e o contrato agnóstico do Nika. | 👨‍💻 **Tech Lead (Você)** | O servidor recebe requisições HTTP reais, traduz para a tabela `req`, roda o Nika, e traduz a tabela `res` para HTTP. |
-| **3. Revisão Arquitetural Final** | Passar a pente fino o código inteiro contra a lista de bloqueios estabelecida nas *Cursorrules*. | 🛡️ **Arquiteto** | Selo de aprovação do MVP. Nenhuma dependência externa identificada. Código 100% auditável. |
+---
+
+## Marco Atual
+MVP estável concluído. Próxima execução técnica: **Fase 7.1 Escape por Contexto (Go-inspired)**.

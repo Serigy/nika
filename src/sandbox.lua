@@ -106,7 +106,12 @@ function M.render_template(compiled_lua_code, req, res, opts)
 
     local ok, result_or_err = pcall(chunk)
     if not ok then
-        log_error("Falha na execucao do template", { error = tostring(result_or_err) })
+        local err_msg = tostring(result_or_err)
+        if err_msg:find("blocked_context:", 1, true) then
+            log_security("Contexto de template bloqueado", { error = err_msg })
+        else
+            log_error("Falha na execucao do template", { error = err_msg })
+        end
         return nil, "Erro interno"
     end
 
