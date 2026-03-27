@@ -71,10 +71,6 @@ local function compile_tokens(template)
     lines[#lines + 1] = "local function write(_) error(\"blocked_context:RAW_TEXT_TEMPLATE\", 2) end"
     lines[#lines + 1] = "local function partial(name, data) return __nika_partial(name, data) end"
     lines[#lines + 1] = "local function include(name, data) __nika_write(__nika_partial(name, data)) end"
-    lines[#lines + 1] = "local function __nika_emit(context, value)"
-    lines[#lines + 1] = "  local raw = tostring(value or \"\")"
-    lines[#lines + 1] = "  __nika_write(__nika_escape_by_context(context, raw))"
-    lines[#lines + 1] = "end"
 
     while true do
         local open_start, open_end = string.find(template, "<%", cursor, true)
@@ -107,7 +103,8 @@ local function compile_tokens(template)
             end
             local context_name = infer_expr_context(template, open_start, literal)
             contexts[#contexts + 1] = context_name
-            lines[#lines + 1] = "__nika_emit(\"" .. context_name .. "\", " .. expr .. ")"
+            lines[#lines + 1] = "__nika_write(__nika_escape_by_context(\"" ..
+            context_name .. "\", tostring(" .. expr .. " or \"\")))"
         else
             local code = trim(raw_block)
             if code ~= "" then

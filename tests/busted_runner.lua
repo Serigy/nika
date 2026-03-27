@@ -6,7 +6,9 @@ local SPEC_MODULES = {
     "tests.determinism_spec",
     "tests.template_functions_registry_spec",
     "tests.template_partials_spec",
-    "tests.template_text_mode_spec"
+    "tests.template_text_mode_spec",
+    "tests.template_equivalence_spec",
+    "tests.template_pentest_final_spec"
 }
 
 local function run_suite(suite)

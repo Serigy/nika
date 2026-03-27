@@ -4,7 +4,7 @@ local sandbox = require("sandbox")
 describe("Deterministic context selection (Fase 7.2)", function()
     local function extract_contexts_from_compiled(compiled)
         local contexts = {}
-        for context in compiled:gmatch('__nika_emit%("([^"]+)"') do
+        for context in compiled:gmatch('__nika_escape_by_context%("([^"]+)"') do
             table.insert(contexts, context)
         end
         return contexts

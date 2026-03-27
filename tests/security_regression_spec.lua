@@ -30,7 +30,8 @@ describe("Security regression suite", function()
         assert(compiled ~= nil, "parser nao compilou: " .. tostring(compile_err))
 
         local compiled_str = compiled or ""
-        assert.is_not_nil(compiled_str:find('__nika_emit%("HTML_TEXT", Request%.query%.nome%)'))
+        assert.is_not_nil(compiled_str:find(
+        '__nika_escape_by_context%("HTML_TEXT", tostring%(Request%.query%.nome or ""%)%)'))
     end)
 
     it("bloqueia acesso a os no sandbox", function()
@@ -114,9 +115,9 @@ describe("Template context matrix contract", function()
 
     it("CSS_STRING fica bloqueado para input nao confiavel no runtime", function()
         local rendered, render_err = compile_and_render(
-        "<style>.x{background:url('<%= Request.query.value %>')}</style>", {
-            value = "');background-image:url(javascript:alert(1));/*"
-        })
+            "<style>.x{background:url('<%= Request.query.value %>')}</style>", {
+                value = "');background-image:url(javascript:alert(1));/*"
+            })
 
         assert.is_nil(rendered)
         assert.are.equal("Erro interno", render_err)

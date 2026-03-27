@@ -82,14 +82,14 @@ Objetivo: elevar expressividade sem perder simplicidade.
 | 8.2 Blocos reutilizáveis — ✅ Concluída | Adicionar blocos/parciais com semântica previsível e sem ocultar fluxo. | `src/template_partials.lua` com allow-list de parciais, `include()`/`partial()` explícitos no parser e integração no sandbox com limite de profundidade; testes em `tests/template_partials_spec.lua` validados. |
 | 8.3 Modo text/template — ✅ Concluída | Criar modo sem auto-escape HTML para casos estritamente textuais. | `template_mode = "text"` implementado no sandbox/nika com isolamento explícito por opção, suporte em parciais e testes em `tests/template_text_mode_spec.lua` cobrindo não regressão de `html`. |
 
-## Fase 9: Validação 1:1 e Hardening Final — ⏳ Em Planejamento
+## Fase 9: Validação 1:1 e Hardening Final — ✅ Concluída
 Objetivo: concluir meta de paridade comportamental.
 
 | Tarefa | Descrição | Definition of Done |
 | :--- | :--- | :--- |
-| 9.1 Suite de equivalência | Criar suite de comparação Nika vs comportamentos esperados de Go templates. | Diferenças conhecidas documentadas e justificadas. |
-| 9.2 Pentest final de template engine | Reexecutar auditoria completa XSS/SSTI em todos contextos. | Relatório final sem bloqueadores críticos. |
-| 9.3 Selo 1:1 comportamental | Publicar documento de conformidade final. | `docs/` com checklist fechado e assinatura de aprovação. |
+| 9.1 Suite de equivalência — ✅ Concluída | Criar suite de comparação Nika vs comportamentos esperados de Go templates. | `tests/template_equivalence_spec.lua` validando paridade em `HTML_TEXT`, `HTML_ATTR_QUOTED`, `URL_ATTR`, `text mode`, parciais e registry; diferenças conhecidas justificadas em teste: bloqueio hardening de `JS_STRING`, `CSS_STRING` e URL perigosa em modo `html`. |
+| 9.2 Pentest final de template engine — ✅ Concluída | Reexecutar auditoria completa XSS/SSTI em todos contextos. | `tests/template_pentest_final_spec.lua` cobrindo XSS por contexto, SSTI, evasão por registry, abuso de parciais, não-vazamento de erro e logging de segurança; suíte completa verde. |
+| 9.3 Selo 1:1 comportamental — ✅ Concluída | Publicar documento de conformidade final. | `docs/PHASE9_CONFORMITY_SEAL.md` publicado com checklist final, evidências técnicas, diferenças conhecidas e decisão de aprovação. |
 
 ---
 
@@ -103,4 +103,4 @@ Objetivo: concluir meta de paridade comportamental.
 ---
 
 ## Marco Atual
-MVP estável concluído. Fase 8 concluída com registry de funções (8.1), blocos reutilizáveis/parciais (8.2) e modo `text/template` explícito (8.3). Próxima execução técnica: **Fase 9.1 Suite de equivalência**.
+MVP estável concluído. Fase 9 concluída com equivalência (9.1), pentest final (9.2) e selo de conformidade (9.3). Próxima execução técnica: **Ciclo de manutenção e monitoramento contínuo**.
