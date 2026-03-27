@@ -113,7 +113,8 @@ describe("Template context matrix contract", function()
     end)
 
     it("CSS_STRING fica bloqueado para input nao confiavel no runtime", function()
-        local rendered, render_err = compile_and_render("<style>.x{background:url('<%= Request.query.value %>')}</style>", {
+        local rendered, render_err = compile_and_render(
+        "<style>.x{background:url('<%= Request.query.value %>')}</style>", {
             value = "');background-image:url(javascript:alert(1));/*"
         })
 
@@ -158,9 +159,9 @@ describe("Context-aware escaping (Fase 7.1)", function()
 
     it("URL_ATTR sanitiza e permite http/https/ftp/mailto", function()
         local cases = {
-            { input = "http://example.com", should_pass = true },
-            { input = "https://example.com", should_pass = true },
-            { input = "/relative/path", should_pass = true },
+            { input = "http://example.com",      should_pass = true },
+            { input = "https://example.com",     should_pass = true },
+            { input = "/relative/path",          should_pass = true },
             { input = "mailto:user@example.com", should_pass = true }
         }
 
