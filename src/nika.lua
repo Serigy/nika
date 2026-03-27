@@ -102,7 +102,10 @@ function M.handle_request(raw_req, opts)
 
     local rendered_body, render_err = sandbox.render_template(compiled_lua, req, res, {
         escape = opts.escape or M.escape_html,
-        api = opts.template_api
+        api = opts.template_api,
+        template_functions = opts.template_functions,
+        template_partials = opts.template_partials,
+        template_mode = opts.template_mode
     })
 
     if not rendered_body then

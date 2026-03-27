@@ -67,18 +67,12 @@ local function compile_tokens(template)
     lines[#lines + 1] = "local escape = assert(escape, \"escape function is required\")"
     lines[#lines + 1] =
     "local __nika_escape_by_context = assert(__nika_escape_by_context, \"__nika_escape_by_context function is required\")"
+    lines[#lines + 1] = "local __nika_partial = assert(__nika_partial, \"__nika_partial function is required\")"
     lines[#lines + 1] = "local function write(_) error(\"blocked_context:RAW_TEXT_TEMPLATE\", 2) end"
+    lines[#lines + 1] = "local function partial(name, data) return __nika_partial(name, data) end"
+    lines[#lines + 1] = "local function include(name, data) __nika_write(__nika_partial(name, data)) end"
     lines[#lines + 1] = "local function __nika_emit(context, value)"
     lines[#lines + 1] = "  local raw = tostring(value or \"\")"
-    lines[#lines + 1] = "  local normalized = raw:gsub(\"^%s+\", \"\"):lower()"
-    lines[#lines + 1] = "  if context == \"URL_ATTR\" then"
-    lines[#lines + 1] =
-    "    if normalized:find(\"javascript:\", 1, true) == 1 or normalized:find(\"data:\", 1, true) == 1 then"
-    lines[#lines + 1] = "      error(\"blocked_context:URL_ATTR\", 2)"
-    lines[#lines + 1] = "    end"
-    lines[#lines + 1] = "  elseif context == \"JS_STRING\" or context == \"CSS_STRING\" then"
-    lines[#lines + 1] = "    error(\"blocked_context:\" .. context, 2)"
-    lines[#lines + 1] = "  end"
     lines[#lines + 1] = "  __nika_write(__nika_escape_by_context(context, raw))"
     lines[#lines + 1] = "end"
 

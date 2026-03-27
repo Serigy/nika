@@ -73,14 +73,14 @@ Objetivo: aproximar comportamento de `html/template` na prática.
 | 7.2 Seleção determinística — ✅ Concluída | Resolver contexto de saída de forma determinística no compilador, sem mágica implícita. | `tests/determinism_spec.lua` com 16 casos validando determinismo, reprodutibilidade e auditabilidade; `docs/CONTEXT_SELECTION_DETERMINISM.md` documentando algoritmo; 100% reproduzível em múltiplas compilações. |
 | 7.3 Compatibilidade retroativa — ✅ Validada | Preservar templates ASP existentes com fallback seguro. | Zero quebra em templates atuais do MVP. |
 
-## Fase 8: Features de Template Inspiradas em Go — ⏳ Em Planejamento
+## Fase 8: Features de Template Inspiradas em Go — ✅ Concluída
 Objetivo: elevar expressividade sem perder simplicidade.
 
 | Tarefa | Descrição | Definition of Done |
 | :--- | :--- | :--- |
-| 8.1 Registry de funções | Definir registry explícito de funções de template (allow-list). | Sem acesso a globais perigosas; API documentada. |
-| 8.2 Blocos reutilizáveis | Adicionar blocos/parciais com semântica previsível e sem ocultar fluxo. | Implementação simples, auditável, sem DSL excessiva. |
-| 8.3 Modo text/template | Criar modo sem auto-escape HTML para casos estritamente textuais. | Modo explícito, isolado e coberto por testes. |
+| 8.1 Registry de funções — ✅ Concluída | Definir registry explícito de funções de template (allow-list). | `src/template_functions.lua` com allow-list e validação de símbolos; integração em `src/sandbox.lua` e `src/nika.lua`; testes em `tests/template_functions_registry_spec.lua` validados. |
+| 8.2 Blocos reutilizáveis — ✅ Concluída | Adicionar blocos/parciais com semântica previsível e sem ocultar fluxo. | `src/template_partials.lua` com allow-list de parciais, `include()`/`partial()` explícitos no parser e integração no sandbox com limite de profundidade; testes em `tests/template_partials_spec.lua` validados. |
+| 8.3 Modo text/template — ✅ Concluída | Criar modo sem auto-escape HTML para casos estritamente textuais. | `template_mode = "text"` implementado no sandbox/nika com isolamento explícito por opção, suporte em parciais e testes em `tests/template_text_mode_spec.lua` cobrindo não regressão de `html`. |
 
 ## Fase 9: Validação 1:1 e Hardening Final — ⏳ Em Planejamento
 Objetivo: concluir meta de paridade comportamental.
@@ -103,4 +103,4 @@ Objetivo: concluir meta de paridade comportamental.
 ---
 
 ## Marco Atual
-MVP estável concluído. Paridade baseline formalizada (fase 6) com context-aware escaping de bloqueio (fase 7) e determinismo garantido. Próxima execução técnica: **Fase 8.1 Registry de Funções**.
+MVP estável concluído. Fase 8 concluída com registry de funções (8.1), blocos reutilizáveis/parciais (8.2) e modo `text/template` explícito (8.3). Próxima execução técnica: **Fase 9.1 Suite de equivalência**.
