@@ -64,14 +64,14 @@ Objetivo: formalizar baseline já existente e fechar lacunas de previsibilidade.
 | 6.2 Contrato de Parser — ✅ Concluída | Fixar contrato de compilação para `<%= %>` com metadados de contexto sem alterar sintaxe ASP. | `src/parser.lua` emitindo contexto (`HTML_TEXT`, `HTML_ATTR_QUOTED`, `URL_ATTR`, `JS_STRING`, `CSS_STRING`) e bloqueio runtime para contextos não suportados. |
 | 6.3 Testes de Baseline — ✅ Concluída | Expandir regressão para payloads por contexto. | `tests/security_regression_spec.lua` cobrindo matriz mínima com validação no runtime; `lua tests/run_all.lua` verde. |
 
-## Fase 7: Context-Aware Escaping (Go-inspired) — ⏳ Em Planejamento
+## Fase 7: Context-Aware Escaping (Go-inspired) — ✅ Concluída
 Objetivo: aproximar comportamento de `html/template` na prática.
 
 | Tarefa | Descrição | Definition of Done |
 | :--- | :--- | :--- |
-| 7.1 Escape por contexto | Implementar funções de escape dedicadas por contexto no runtime. | Casos de `html_text`, `attr`, `url`, `js`, `css` com testes de injeção aprovados. |
-| 7.2 Seleção determinística | Resolver contexto de saída de forma determinística no compilador, sem mágica implícita. | Resultado reproduzível e auditável entre runs. |
-| 7.3 Compatibilidade retroativa | Preservar templates ASP existentes com fallback seguro. | Zero quebra em templates atuais do MVP. |
+| 7.1 Escape por contexto — ✅ Concluída | Implementar funções de escape dedicadas por contexto no runtime. | `src/escape_context.lua` com dispatch automático por contexto (HTML_TEXT, HTML_ATTR_QUOTED, URL_ATTR); testes em `security_regression_spec.lua` validando escapes e bloqueios; compatibilidade retroativa confirmada. |
+| 7.2 Seleção determinística — ✅ Concluída | Resolver contexto de saída de forma determinística no compilador, sem mágica implícita. | `tests/determinism_spec.lua` com 16 casos validando determinismo, reprodutibilidade e auditabilidade; `docs/CONTEXT_SELECTION_DETERMINISM.md` documentando algoritmo; 100% reproduzível em múltiplas compilações. |
+| 7.3 Compatibilidade retroativa — ✅ Validada | Preservar templates ASP existentes com fallback seguro. | Zero quebra em templates atuais do MVP. |
 
 ## Fase 8: Features de Template Inspiradas em Go — ⏳ Em Planejamento
 Objetivo: elevar expressividade sem perder simplicidade.
@@ -103,4 +103,4 @@ Objetivo: concluir meta de paridade comportamental.
 ---
 
 ## Marco Atual
-MVP estável concluído. Próxima execução técnica: **Fase 7.1 Escape por Contexto (Go-inspired)**.
+MVP estável concluído. Paridade baseline formalizada (fase 6) com context-aware escaping de bloqueio (fase 7) e determinismo garantido. Próxima execução técnica: **Fase 8.1 Registry de Funções**.

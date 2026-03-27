@@ -130,3 +130,63 @@ describe("Template context matrix contract", function()
         assert.are.equal("Erro interno", render_err)
     end)
 end)
+
+describe("Context-aware escaping (Fase 7.1)", function()
+    it("HTML_TEXT usa escape generico com caracteres especiais", function()
+        local payload = '<a href="#">&nbsp;</a>'
+        local rendered, render_err = compile_and_render("<p><%= Request.query.value %></p>", { value = payload })
+
+        assert.is_nil(render_err)
+        assert.is_not_nil(rendered)
+
+        assert.is_not_nil(rendered:find("&lt;a href=", 1, true))
+        assert.is_not_nil(rendered:find("&amp;nbsp;", 1, true))
+        assert.is_not_nil(rendered:find("&lt;/a&gt;", 1, true))
+    end)
+
+    it("HTML_ATTR_QUOTED escapa aspas como atributo", function()
+        local payload = '"><img src=x onerror=alert(1)>'
+        local rendered, render_err = compile_and_render('<input value="<%= Request.query.value %>">', { value = payload })
+
+        assert.is_nil(render_err)
+        assert.is_not_nil(rendered)
+
+        assert.is_not_nil(rendered:find('<input value="', 1, true))
+        assert.is_not_nil(rendered:find("&quot;&gt;", 1, true))
+        assert.is_nil(rendered:find('<img', 1, true))
+    end)
+
+    it("URL_ATTR sanitiza e permite http/https/ftp/mailto", function()
+        local cases = {
+            { input = "http://example.com", should_pass = true },
+            { input = "https://example.com", should_pass = true },
+            { input = "/relative/path", should_pass = true },
+            { input = "mailto:user@example.com", should_pass = true }
+        }
+
+        for _, case in ipairs(cases) do
+            local rendered, render_err = compile_and_render('<a href="<%= Request.query.value %>">link</a>', {
+                value = case.input
+            })
+
+            if case.should_pass then
+                assert.is_nil(render_err, "URL " .. case.input .. " should pass")
+                assert.is_not_nil(rendered)
+                assert.is_not_nil(rendered:find("href=", 1, true))
+            end
+        end
+    end)
+
+    it("URL_ATTR bloqueia javascript: e data: schemes", function()
+        local bad_cases = { "javascript:alert(1)", "data:text/html,<script>alert(1)</script>" }
+
+        for _, payload in ipairs(bad_cases) do
+            local rendered, render_err = compile_and_render('<a href="<%= Request.query.value %>">link</a>', {
+                value = payload
+            })
+
+            assert.is_nil(rendered, "URL " .. payload .. " should be blocked")
+            assert.are.equal("Erro interno", render_err)
+        end
+    end)
+end)

@@ -2,7 +2,8 @@ local busted = require("tests.busted_lite")
 
 local SPEC_MODULES = {
     "tests.integration_mvp_spec",
-    "tests.security_regression_spec"
+    "tests.security_regression_spec",
+    "tests.determinism_spec"
 }
 
 local function run_suite(suite)

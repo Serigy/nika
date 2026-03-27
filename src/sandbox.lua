@@ -3,6 +3,7 @@ local M = {}
 local has_audit, audit = pcall(require, "nika_audit")
 local loadstring_fn = rawget(_G, "loadstring")
 local setfenv_fn = rawget(_G, "setfenv")
+local escape_context = require("escape_context")
 
 local FORBIDDEN = {
     _G = true,
@@ -52,6 +53,7 @@ function M.build_env(req, res, escape_fn, api)
         Request = req,
         Response = res,
         escape = escape_fn,
+        __nika_escape_by_context = escape_context.escape_by_context,
         assert = assert,
         pairs = pairs,
         ipairs = ipairs,
