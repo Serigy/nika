@@ -2,8 +2,24 @@ local json_util = require("json_util")
 
 local M = {}
 
-local function contains(haystack, needle)
-    return tostring(haystack or ""):lower():find(needle, 1, true) ~= nil
+local function split_accept_header(header)
+    local items = {}
+    for token in tostring(header or ""):gmatch("[^,]+") do
+        local media = token:match("^%s*([^;]+)")
+        if media then
+            items[#items + 1] = string.lower((media:gsub("%s+", "")))
+        end
+    end
+    return items
+end
+
+local function has_media(items, media)
+    for i = 1, #items do
+        if items[i] == media then
+            return true
+        end
+    end
+    return false
 end
 
 local function escape_html(value)
@@ -27,17 +43,27 @@ local function escape_xml(value)
 end
 
 function M.negotiate(accept_header, default_format)
-    local header = tostring(accept_header or "")
+    local accepted = split_accept_header(accept_header)
     local fallback = default_format or "json"
 
-    if contains(header, "application/json") then
+    if has_media(accepted, "application/json") then
         return "json"
     end
-    if contains(header, "application/xml") or contains(header, "text/xml") then
+    if has_media(accepted, "application/xml") or has_media(accepted, "text/xml") then
         return "xml"
     end
-    if contains(header, "text/html") then
+    if has_media(accepted, "text/html") then
         return "html"
+    end
+
+    if has_media(accepted, "application/*") then
+        return "json"
+    end
+    if has_media(accepted, "text/*") then
+        return "html"
+    end
+    if has_media(accepted, "*/*") then
+        return fallback
     end
 
     return fallback

@@ -7,6 +7,12 @@ describe("Error formatter (Phase 13)", function()
         assert.are.equal("html", error_formatter.negotiate("text/html"))
     end)
 
+    it("suporta wildcards explicitos no Accept", function()
+        assert.are.equal("json", error_formatter.negotiate("application/*"))
+        assert.are.equal("html", error_formatter.negotiate("text/*"))
+        assert.are.equal("xml", error_formatter.negotiate("*/*", "xml"))
+    end)
+
     it("renderiza payload em json xml e html", function()
         local payload = {
             status = 500,
