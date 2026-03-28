@@ -4,8 +4,8 @@
 
 local M = {}
 
-local _middlewares = {}  -- { stage → { mid_name → middleware_fn } }
-local _priorities = {}   -- { stage → { mid_name → priority } }
+local _middlewares = {} -- { stage → { mid_name → middleware_fn } }
+local _priorities = {}  -- { stage → { mid_name → priority } }
 
 local STAGES = {
     before_request = 1,
@@ -19,26 +19,26 @@ local DEFAULT_PRIORITY = 50
 -- priority: higher = first (default 50)
 function M.use(stage, middleware_fn, name, priority)
     if not STAGES[stage] then
-        error("Stage inválido: " .. tostring(stage) .. 
-              ". Válidos: before_request, before_render, after_request")
+        error("Stage inválido: " .. tostring(stage) ..
+            ". Válidos: before_request, before_render, after_request")
     end
-    
+
     if type(middleware_fn) ~= "function" then
         error("Middleware deve ser function, recebido: " .. type(middleware_fn))
     end
-    
+
     name = name or "middleware_" .. math.random(10000, 99999)
     priority = priority or DEFAULT_PRIORITY
-    
+
     if not _middlewares[stage] then
         _middlewares[stage] = {}
         _priorities[stage] = {}
     end
-    
+
     _middlewares[stage][name] = middleware_fn
     _priorities[stage][name] = priority
-    
-    return name  -- retorna nome para possível unregister
+
+    return name -- retorna nome para possível unregister
 end
 
 -- Remove middleware específico
@@ -65,7 +65,7 @@ local function get_sorted_middlewares(stage)
     if not _middlewares[stage] then
         return {}
     end
-    
+
     local list = {}
     for name, fn in pairs(_middlewares[stage]) do
         table.insert(list, {
@@ -74,15 +74,15 @@ local function get_sorted_middlewares(stage)
             priority = _priorities[stage][name] or DEFAULT_PRIORITY
         })
     end
-    
+
     -- Sort: higher priority first
-    table.sort(list, function(a, b) 
+    table.sort(list, function(a, b)
         if a.priority ~= b.priority then
-            return a.priority > b.priority 
+            return a.priority > b.priority
         end
-        return a.name < b.name  -- estável por nome
+        return a.name < b.name -- estável por nome
     end)
-    
+
     return list
 end
 
@@ -92,13 +92,13 @@ function M.run(stage, req, res, context)
     if not STAGES[stage] then
         error("Stage inválido: " .. stage)
     end
-    
+
     context = context or {}
     local middlewares = get_sorted_middlewares(stage)
-    
+
     for _, mid in ipairs(middlewares) do
         local ok, result = pcall(mid.fn, req, res, context)
-        
+
         if not ok then
             -- Middleware error: log via nika_audit if available
             local nika_audit = package.loaded["nika_audit"]
@@ -109,9 +109,9 @@ function M.run(stage, req, res, context)
                     error = tostring(result)
                 })
             end
-            return nil, result  -- propaga erro
+            return nil, result -- propaga erro
         end
-        
+
         -- Stages before_request/before_render podem short-circuit (retornar true)
         if stage ~= "after_request" and result == true then
             if nika_audit and nika_audit.log_security then
@@ -120,16 +120,16 @@ function M.run(stage, req, res, context)
                     middleware = mid.name
                 })
             end
-            return true  -- short-circuit flag
+            return true -- short-circuit flag
         end
-        
+
         -- Se middleware retorna novo context (table), atualiza
         if type(result) == "table" and result ~= context then
             context = result
         end
     end
-    
-    return false, nil, context  -- no short-circuit
+
+    return false, nil, context -- no short-circuit
 end
 
 -- Retorna lista de middlewares registrados (debug)
@@ -154,7 +154,7 @@ function M.count(stage)
         for _ in pairs(_middlewares[stage]) do count = count + 1 end
         return count
     end
-    
+
     local total = 0
     for s, _ in pairs(STAGES) do
         if _middlewares[s] then

@@ -4,8 +4,8 @@
 
 local M = {}
 
-local _routes = {}  -- { method → { { pattern, handler, name, lua_pattern, param_names } } }
-local _compiled_patterns = {}  -- cache de padrões compilados
+local _routes = {}            -- { method → { { pattern, handler, name, lua_pattern, param_names } } }
+local _compiled_patterns = {} -- cache de padrões compilados
 
 -- Compila um padrão de rota para regex Lua
 -- Exemplos:
@@ -16,17 +16,17 @@ local function compile_pattern(pattern)
     if _compiled_patterns[pattern] then
         return _compiled_patterns[pattern]
     end
-    
+
     local lua_pattern = pattern
-    
+
     -- Substitui :param por capture group
     lua_pattern = lua_pattern:gsub(":([a-zA-Z_][a-zA-Z0-9_]*)", "([^/]+)")
-    
+
     -- Substitui {regex} por capture group com regex
     lua_pattern = lua_pattern:gsub("{([^}]+)}", function(regex)
         return "(" .. regex .. ")"
     end)
-    
+
     _compiled_patterns[pattern] = lua_pattern
     return lua_pattern
 end
@@ -47,27 +47,27 @@ end
 -- handler: function(req, res, context) end
 -- name: identificador único (gerado se não fornecido)
 function M.register(method, pattern, handler, name)
-    if type(method) ~= "string" or type(pattern) ~= "string" or 
-       type(handler) ~= "function" then
+    if type(method) ~= "string" or type(pattern) ~= "string" or
+        type(handler) ~= "function" then
         error("Assinatura: register(method, pattern, handler, [name])")
     end
-    
+
     method = string.upper(method)
-    
+
     if not pattern:match("^/") then
         pattern = "/" .. pattern
     end
-    
-    name = name or (method .. "_" .. pattern:gsub("[^a-zA-Z0-9]", "_") .. 
-                   "_" .. math.random(10000, 99999))
-    
+
+    name = name or (method .. "_" .. pattern:gsub("[^a-zA-Z0-9]", "_") ..
+        "_" .. math.random(10000, 99999))
+
     if not _routes[method] then
         _routes[method] = {}
     end
-    
+
     local param_names = extract_param_names(pattern)
     local lua_pattern = compile_pattern(pattern)
-    
+
     table.insert(_routes[method], {
         pattern = pattern,
         lua_pattern = lua_pattern,
@@ -75,7 +75,7 @@ function M.register(method, pattern, handler, name)
         handler = handler,
         name = name
     })
-    
+
     return name
 end
 
@@ -83,31 +83,31 @@ end
 -- Retorna: (handler, nil, params) ou (nil, error, nil)
 function M.match(method, path)
     method = string.upper(method)
-    
+
     if not _routes[method] then
         return nil, "Método não registrado: " .. method
     end
-    
+
     -- Normaliza path
     if not path or path == "" then path = "/" end
     if not path:match("^/") then path = "/" .. path end
-    
+
     -- Tenta encontrar rota que faz match
     for _, route in ipairs(_routes[method]) do
         local pattern = "^" .. route.lua_pattern .. "$"
         local matches = table.pack(path:match(pattern))
-        
+
         if matches[1] ~= nil then
             -- Extrai parâmetros
             local params = {}
             for i, param_name in ipairs(route.param_names) do
                 params[param_name] = matches[i]
             end
-            
+
             return route.handler, nil, params
         end
     end
-    
+
     return nil, string.format("%s %s not found", method, path)
 end
 
