@@ -153,7 +153,8 @@ function M.handle_request(raw_req, opts)
             return finalize_response(false)
         end
 
-        local stop_before_request, before_request_reason = hooks.run_stage("before_request", req, res, { phase = "before_request" })
+        local stop_before_request, before_request_reason = hooks.run_stage("before_request", req, res,
+            { phase = "before_request" })
         if before_request_reason == "hook_error" then
             apply_error({
                 status = 500,
