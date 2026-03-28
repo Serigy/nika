@@ -171,7 +171,7 @@ end
 -- Debug: retorna informações de middlewares
 function M.debug_middlewares()
     local result = {}
-    for _, stage in ipairs({"before_request", "before_render", "after_request"}) do
+    for _, stage in ipairs({ "before_request", "before_render", "after_request" }) do
         result[stage] = middleware_chain.get_middleware_list(stage)
     end
     return result

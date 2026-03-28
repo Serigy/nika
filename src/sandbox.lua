@@ -7,7 +7,7 @@ local escape_context = require("escape_context")
 local template_functions = require("template_functions")
 local template_partials = require("template_partials")
 local parser = require("parser")
-local has_context_store, context_store = pcall(require, "context_store")  -- Phase 10
+local has_context_store, context_store = pcall(require, "context_store") -- Phase 10
 
 local FORBIDDEN = {
     _G = true,
@@ -25,7 +25,7 @@ local FORBIDDEN = {
 local RESERVED_ENV = {
     Request = true,
     Response = true,
-    Context = true,  -- Phase 10: request-scoped context (read-only)
+    Context = true, -- Phase 10: request-scoped context (read-only)
     escape = true,
     write = true,
     __nika_emit = true,

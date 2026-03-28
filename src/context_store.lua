@@ -4,8 +4,8 @@
 
 local M = {}
 
-local _store = {}  -- { request_id → { key = value } }
-local _cleanup_queue = {}  -- lista de request_ids para limpeza
+local _store = {}         -- { request_id → { key = value } }
+local _cleanup_queue = {} -- lista de request_ids para limpeza
 
 -- Gera UUID simples para request_id
 local function generate_uuid()
@@ -23,12 +23,12 @@ function M.create_context(request_id)
     if not request_id then
         request_id = generate_uuid()
     end
-    
+
     -- Se já existe, retorna ID existente
     if _store[request_id] then
         return request_id
     end
-    
+
     _store[request_id] = {}
     table.insert(_cleanup_queue, request_id)
     return request_id
@@ -39,12 +39,12 @@ function M.set(request_id, key, value)
     if not request_id or not _store[request_id] then
         return false, "Context inexistente: " .. tostring(request_id)
     end
-    
+
     -- Bloqueia chaves reservadas
     if key == "_request_id" or key == "system" or key == "__meta" then
         return false, "Chave reservada: " .. key
     end
-    
+
     _store[request_id][key] = value
     return true
 end
@@ -62,7 +62,7 @@ function M.get_all(request_id)
     if not request_id or not _store[request_id] then
         return {}
     end
-    
+
     local ctx = {}
     for k, v in pairs(_store[request_id]) do
         ctx[k] = v
@@ -89,7 +89,7 @@ end
 -- Template pode ler context.get("key") mas não pode modificar
 function M.make_readonly_api(request_id)
     local ctx_data = M.get_all(request_id)
-    
+
     return setmetatable({}, {
         __index = function(_, key)
             return ctx_data[key]
@@ -105,8 +105,8 @@ end
 
 -- Debug/Info
 function M.to_string()
-    return string.format("ContextStore: %d contextos ativos", 
-                        #_cleanup_queue)
+    return string.format("ContextStore: %d contextos ativos",
+        #_cleanup_queue)
 end
 
 function M.get_store_stats()
