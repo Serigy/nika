@@ -354,7 +354,7 @@ function Builder:create(data)
     end
 
     local sql = "INSERT INTO " ..
-    self._table .. " (" .. table.concat(columns, ",") .. ") VALUES (" .. table.concat(holders, ",") .. ")"
+        self._table .. " (" .. table.concat(columns, ",") .. ") VALUES (" .. table.concat(holders, ",") .. ")"
     local result, err = db.execute(sql, params)
     if not result then
         return nil, err
@@ -400,7 +400,7 @@ function Builder:update(data)
     end
 
     local sql = "UPDATE " ..
-    self._table .. " SET " .. table.concat(set_parts, ",") .. " WHERE " .. table.concat(clauses, " AND ")
+        self._table .. " SET " .. table.concat(set_parts, ",") .. " WHERE " .. table.concat(clauses, " AND ")
     local result, db_err = db.execute(sql, params)
     if not result then
         return nil, db_err
