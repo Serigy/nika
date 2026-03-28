@@ -1,8 +1,15 @@
 local nika = require("nika")
+local multipart = require("multipart")
+local file_manager = require("file_manager")
 
 local has_audit, audit = pcall(require, "nika_audit")
 
 local M = {}
+
+local function generate_request_id()
+    local seed = tostring(os.time()) .. tostring(math.random(100000, 999999))
+    return "req-" .. seed
+end
 
 local function log_error(message, context)
     if has_audit and audit and type(audit.log_error) == "function" then
@@ -109,16 +116,50 @@ function M.request_from_cgi(env, stdin_reader)
         path = "/"
     end
 
+    local headers = parse_headers(env)
+    local context_id = env.HTTP_X_REQUEST_ID or env.REQUEST_ID or env.UNIQUE_ID or generate_request_id()
     local query = parse_query(env.QUERY_STRING or "")
     local body = read_body(env, stdin_reader)
-    local headers = parse_headers(env)
+
+    local form_data = {}
+    local files = {}
+    local body_table = nil
+    local upload_error = nil
+
+    local content_type = headers["Content-Type"]
+    if multipart.is_multipart(content_type) then
+        local parsed, parse_err = multipart.parse(body, content_type)
+        if not parsed then
+            upload_error = parse_err
+        else
+            form_data = parsed.form_data or {}
+            body_table = form_data
+
+            local stored, store_err = file_manager.process_files(parsed.files or {}, {
+                request_id = context_id
+            })
+            if not stored then
+                upload_error = store_err
+            else
+                files = stored
+            end
+        end
+    elseif type(content_type) == "string" and string.lower(content_type):find("application/x%-www%-form%-urlencoded", 1, false) then
+        form_data = parse_query(body)
+        body_table = form_data
+    end
 
     return {
         method = method,
         path = path,
         query = query,
         body = body,
-        headers = headers
+        headers = headers,
+        form_data = form_data,
+        files = files,
+        body_table = body_table,
+        context_id = context_id,
+        upload_error = upload_error
     }
 end
 

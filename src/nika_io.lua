@@ -1,4 +1,5 @@
 local M = {}
+local json_util = require("json_util")
 
 local function copy_table(input)
     local out = {}
@@ -54,9 +55,13 @@ function M.new_request(raw)
         path = normalize_path(source.path),
         query = copy_table(source.query),
         body = source.body,
+        body_table = copy_table(source.body_table),
         headers = copy_table(source.headers),
+        form_data = copy_table(source.form_data),
+        files = copy_table(source.files),
         params = copy_table(source.params),
-        context_id = source.context_id or nil -- Phase 10: request-scoped context ID
+        context_id = source.context_id or nil, -- Phase 10: request-scoped context ID
+        upload_error = source.upload_error or nil
     }
 
     return readonly(req)
@@ -73,6 +78,15 @@ function M.new_response(raw)
 
     if res.headers["Content-Type"] == nil then
         res.headers["Content-Type"] = "text/html; charset=utf-8"
+    end
+
+    function res.json(payload, status)
+        if status ~= nil then
+            res.status = tonumber(status) or res.status
+        end
+        res.headers["Content-Type"] = "application/json; charset=utf-8"
+        res.body = json_util.encode(payload)
+        return res
     end
 
     return res

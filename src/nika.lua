@@ -9,6 +9,8 @@ local context_store = require("context_store")
 local middleware_chain = require("middleware_chain")
 local router_v2 = require("router_v2")
 local route_group = require("route_group")
+local dataware = require("dataware")
+local file_manager = require("file_manager")
 
 local has_audit, audit = pcall(require, "nika_audit")
 
@@ -48,8 +50,49 @@ end
 function M.handle_request(raw_req, opts)
     opts = opts or {}
 
+    raw_req = raw_req or {}
+    if raw_req.context_id == nil or raw_req.context_id == "" then
+        raw_req.context_id = "ctx-" .. tostring(os.time()) .. "-" .. tostring(math.random(100000, 999999))
+    end
+
     local req = io_factory.new_request(raw_req)
     local res = io_factory.new_response(opts.base_response)
+
+    local function cleanup_uploads()
+        local ok_cleanup, cleanup_err = pcall(function()
+            file_manager.cleanup_request(req.context_id)
+        end)
+        if not ok_cleanup then
+            log_error("Falha no cleanup de upload", {
+                context_id = req.context_id,
+                error = tostring(cleanup_err)
+            })
+        end
+    end
+
+    local function finalize_response(run_after_request, template_path)
+        if run_after_request == true then
+            local stop_after_request = hooks.run_stage("after_request", req, res, {
+                phase = "after_request",
+                template_path = template_path
+            })
+            if stop_after_request == true then
+                cleanup_uploads()
+                return res
+            end
+        end
+
+        cleanup_uploads()
+        return res
+    end
+
+    local function upload_error_status(upload_err)
+        local normalized = tostring(upload_err or "")
+        if normalized == "file_too_large" or normalized == "payload_too_large" then
+            return 413
+        end
+        return 400
+    end
 
     if opts.auto_register_default_hooks ~= false then
         local ok_defaults, defaults_err = hooks.register_default_hooks({
@@ -59,13 +102,22 @@ function M.handle_request(raw_req, opts)
             log_error("Falha ao registrar hooks padrao", { error = tostring(defaults_err) })
             res.status = 500
             res.body = "Erro interno."
-            return res
+            return finalize_response(false)
         end
+    end
+
+    if req.upload_error then
+        local status = upload_error_status(req.upload_error)
+        res.json({
+            error = "upload_error",
+            reason = tostring(req.upload_error)
+        }, status)
+        return finalize_response(false)
     end
 
     local stop_before_request = hooks.run_stage("before_request", req, res, { phase = "before_request" })
     if stop_before_request == true then
-        return res
+        return finalize_response(false)
     end
 
     local template_path, route_err = router.resolve_or_404(req, res, {
@@ -73,7 +125,7 @@ function M.handle_request(raw_req, opts)
     })
 
     if not template_path then
-        return res
+        return finalize_response(false)
     end
 
     local template_source, read_err = safe_read_file(template_path)
@@ -84,7 +136,7 @@ function M.handle_request(raw_req, opts)
         })
         res.status = 500
         res.body = "Erro interno."
-        return res
+        return finalize_response(false)
     end
 
     local stop_before_render = hooks.run_stage("before_render", req, res, {
@@ -92,7 +144,7 @@ function M.handle_request(raw_req, opts)
         template_path = template_path
     })
     if stop_before_render == true then
-        return res
+        return finalize_response(false)
     end
 
     local compiled_lua, compile_err = parser.compile(template_source)
@@ -103,7 +155,7 @@ function M.handle_request(raw_req, opts)
         })
         res.status = 500
         res.body = "Erro interno."
-        return res
+        return finalize_response(false)
     end
 
     local rendered_body, render_err = sandbox.render_template(compiled_lua, req, res, {
@@ -121,20 +173,12 @@ function M.handle_request(raw_req, opts)
         })
         res.status = 500
         res.body = "Erro interno."
-        return res
+        return finalize_response(false)
     end
 
     res.body = rendered_body
 
-    local stop_after_request = hooks.run_stage("after_request", req, res, {
-        phase = "after_request",
-        template_path = template_path
-    })
-    if stop_after_request == true then
-        return res
-    end
-
-    return res
+    return finalize_response(true, template_path)
 end
 
 -- Phase 10: API para Gin-style routing
@@ -175,6 +219,23 @@ function M.debug_middlewares()
         result[stage] = middleware_chain.get_middleware_list(stage)
     end
     return result
+end
+
+-- Phase 11: model registry (REST Dataware)
+function M.model(name)
+    return dataware.model(name)
+end
+
+function M.get_model(name)
+    return dataware.get(name)
+end
+
+function M.list_models()
+    return dataware.list()
+end
+
+function M.clear_models()
+    return dataware.clear()
 end
 
 return M
