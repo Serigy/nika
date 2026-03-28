@@ -288,7 +288,8 @@ function Builder:create(data)
         params[#params + 1] = payload[keys[i]]
     end
 
-    local sql = "INSERT INTO " .. self._table .. " (" .. table.concat(columns, ",") .. ") VALUES (" .. table.concat(holders, ",") .. ")"
+    local sql = "INSERT INTO " ..
+    self._table .. " (" .. table.concat(columns, ",") .. ") VALUES (" .. table.concat(holders, ",") .. ")"
     local result, err = db.execute(sql, params)
     if not result then
         return nil, err
@@ -333,7 +334,8 @@ function Builder:update(data)
         params[#params + 1] = where_params[i]
     end
 
-    local sql = "UPDATE " .. self._table .. " SET " .. table.concat(set_parts, ",") .. " WHERE " .. table.concat(clauses, " AND ")
+    local sql = "UPDATE " ..
+    self._table .. " SET " .. table.concat(set_parts, ",") .. " WHERE " .. table.concat(clauses, " AND ")
     local result, db_err = db.execute(sql, params)
     if not result then
         return nil, db_err
