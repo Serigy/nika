@@ -16,6 +16,8 @@ local SPEC_MODULES = {
     "tests.route_group_spec",
     -- Phase 11: Dataware ORM + Auto-CRUD
     "tests.dataware_spec",
+    "tests.dataware_audit_spec",
+    "tests.dataware_tenancy_spec",
     "tests.query_builder_spec",
     "tests.auto_crud_spec",
     -- Phase 12: File upload foundation

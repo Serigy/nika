@@ -75,13 +75,13 @@ local function apply_eager_loading(self, rows)
     return rows, nil
 end
 
-local function collect_where_parts(self)
+local function collect_where_parts(self, operation)
     local clauses = { "1 = ?" }
     local params = { 1 }
 
     if self._require_tenant then
         if self._tenant_id == nil or self._tenant_id == "" then
-            dataware_audit.log_tenant_violation(self._model_name, "query")
+            dataware_audit.log_tenant_violation(self._model_name, operation or "query")
             return nil, nil, "tenant_required"
         end
         clauses[#clauses + 1] = self._tenant_field .. " = ?"
@@ -211,7 +211,7 @@ function Builder:offset(value)
 end
 
 function Builder:_build_select_sql()
-    local clauses, params, err = collect_where_parts(self)
+    local clauses, params, err = collect_where_parts(self, "select")
     if err then
         return nil, nil, err
     end
@@ -282,7 +282,7 @@ function Builder:paginate(page, per_page)
         pp = 100
     end
 
-    local clauses, params, err = collect_where_parts(self)
+    local clauses, params, err = collect_where_parts(self, "paginate")
     if err then
         return nil, nil, err
     end
@@ -327,6 +327,7 @@ function Builder:create(data)
 
     if self._require_tenant then
         if self._tenant_id == nil or self._tenant_id == "" then
+            dataware_audit.log_tenant_violation(self._model_name, "create")
             return nil, "tenant_required"
         end
         if payload[self._tenant_field] == nil then
@@ -390,7 +391,7 @@ function Builder:update(data)
         params[#params + 1] = data[keys[i]]
     end
 
-    local clauses, where_params, err = collect_where_parts(self)
+    local clauses, where_params, err = collect_where_parts(self, "update")
     if err then
         return nil, err
     end
@@ -415,7 +416,7 @@ function Builder:delete()
         return nil, "where_required_for_delete"
     end
 
-    local clauses, params, err = collect_where_parts(self)
+    local clauses, params, err = collect_where_parts(self, "delete")
     if err then
         return nil, err
     end

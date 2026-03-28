@@ -59,7 +59,8 @@ function M.process_files(files, opts)
             filename = meta.filename,
             original_filename = file.filename,
             content_type = meta.content_type,
-            size = meta.size
+            size = meta.size,
+            path = meta.path
         }
     end
 

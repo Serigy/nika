@@ -8,7 +8,8 @@ Construir um framework web Lua minimalista e auditável, mantendo sintaxe ASP em
 - ✅ Suite de integração e regressão de segurança ativa.
 - ✅ Pipeline de release (GitHub Release + pacote LuaRocks) configurado.
 - ✅ Fases 6 a 10 concluídas (template engine + core routing/middleware).
-- 🔄 Em andamento: Fase 11 (REST Dataware ORM + Auto-CRUD) e Fase 12 (File Uploads + Multipart Parsing).
+- ✅ Fase 11 (REST Dataware ORM + Auto-CRUD) concluída.
+- ✅ Fase 12 (File Uploads + Multipart Parsing) concluída.
 
 ---
 
@@ -209,7 +210,7 @@ end)
 
 ---
 
-## Fase 11: REST Dataware ORM + Auto-CRUD (Semanas 3-4) — 🔄 In Progress
+## Fase 11: REST Dataware ORM + Auto-CRUD (Semanas 3-4) — ✅ Concluída
 
 **Objetivo:** ORM Lua nativo com query builder fluente + gerador automático de rotas CRUD.
 
@@ -240,11 +241,11 @@ end)
 
 | Arquivo | Responsabilidade | Status |
 |---------|------------------|--------|
-| `src/dataware.lua` | Model registry + schema DSL | 🔄 |
-| `src/query_builder.lua` | Fluent API: `find()`, `create()`, `where()`, `select()`, `order_by()`, `limit()`, `join()` | 🔄 |
-| `src/auto_crud.lua` | Generator: Model → 5 rotas CRUD (List, Get, Create, Update, Delete) | 🔄 |
-| `src/dataware_audit.lua` | Log automático INSERT/UPDATE/DELETE com user_id, timestamp | 🔄 |
-| `src/dataware_tenancy.lua` | Middleware: auto-inject `tenant_id` em todas queries | 🔄 |
+| `src/dataware.lua` | Model registry + schema DSL | ✅ |
+| `src/query_builder.lua` | Fluent API: `find()`, `create()`, `where()`, `select()`, `order_by()`, `limit()`, `paginate()`, `with()` | ✅ |
+| `src/auto_crud.lua` | Generator: Model → 5 rotas CRUD (List, Get, Create, Update, Delete) | ✅ |
+| `src/dataware_audit.lua` | Log automático de CRUD + tenant violation | ✅ |
+| `src/dataware_tenancy.lua` | Middleware: auto-inject `tenant_id` em todas queries | ✅ |
 
 ### Sintaxe Nova (Nika)
 
@@ -290,19 +291,19 @@ local posts = User:find(1):with("posts"):first()
 
 ### Definition of Done
 
-- [ ] Define modelo com schema DSL; compila sem erro
-- [ ] CRUD routes geradas automaticamente (5 rotas)
-- [ ] Query builder funciona: `User:find():where(...):select(...):first()`
-- [ ] Relacionamentos (eager load): `User:find(1):with("posts")`
-- [ ] Audit: logs registram CREATE, UPDATE, DELETE com user_id, timestamp
-- [ ] Multi-tenancy: middleware auto-injeta `tenant_id`; query sem tenant retorna erro
-- [ ] Paginação: `list, total = User:find():paginate(page=1, per_page=10)`
-- [ ] Testes: `test_dataware_spec.lua`, `test_auto_crud_spec.lua`
-- [ ] ISO 27001: QueryBuilder usa prepared statements; tenant_id validado
+- [x] Define modelo com schema DSL; compila sem erro
+- [x] CRUD routes geradas automaticamente (5 rotas)
+- [x] Query builder funciona: `User:find():where(...):select(...):first()`
+- [x] Relacionamentos (eager load): `User:find(1):with("posts")`
+- [x] Audit: logs registram CREATE, UPDATE, DELETE e tenant violations
+- [x] Multi-tenancy: middleware auto-injeta `tenant_id`; query sem tenant retorna erro
+- [x] Paginação: `list, total = User:find():paginate(page=1, per_page=10)`
+- [x] Testes: `tests/dataware_spec.lua`, `tests/query_builder_spec.lua`, `tests/auto_crud_spec.lua`, `tests/dataware_audit_spec.lua`, `tests/dataware_tenancy_spec.lua`
+- [x] ISO 27001: QueryBuilder usa prepared statements; tenant_id validado
 
 ---
 
-## Fase 12: File Uploads + Multipart Parsing (Semanas 5-6) — 🔄 In Progress
+## Fase 12: File Uploads + Multipart Parsing (Semanas 5-6) — ✅ Concluída
 
 **Objetivo:** Suporte completo a upload de arquivos com validação MIME, size check, armazenamento plugável.
 
@@ -331,10 +332,10 @@ local posts = User:find(1):with("posts"):first()
 
 | Arquivo | Responsabilidade | Status |
 |---------|------------------|--------|
-| `src/multipart.lua` | Parser streaming multipart/form-data | ⏳ |
-| `src/file_validator.lua` | MIME whitelist, size limits, extension sanitize | 🔄 |
-| `src/file_storage.lua` | Interface plugável (File, S3, GCS) | 🔄 |
-| `src/file_manager.lua` | Wrapper: upload(), validate(), store(), cleanup() | ⏳ |
+| `src/multipart.lua` | Parser multipart/form-data (boundary-safe) | ✅ |
+| `src/file_validator.lua` | MIME whitelist, size limits, extension sanitize | ✅ |
+| `src/file_storage.lua` | Interface plugável (File provider default) | ✅ |
+| `src/file_manager.lua` | Wrapper: validate(), store(), cleanup() por request | ✅ |
 
 ### Sintaxe Nova (Nika)
 
@@ -360,15 +361,15 @@ end)
 
 ### Definition of Done
 
-- [ ] Parse multipart com N fields + N files
-- [ ] Extrai: `req.files[0].filename`, `.content_type`, `.data`
-- [ ] Validação: rejeita MIME não-whitelist (ex: .exe)
-- [ ] File size limit: rejeita > 100MB
-- [ ] Armazena em `/uploads/uuid/filename`; retorna caminho relativo
-- [ ] Cleanup: remove arquivos temporários após resposta
-- [ ] Erro handling: 413 Payload Too Large, 400 Bad Request
-- [ ] Testes: `test_multipart_spec.lua`, `test_file_validator_spec.lua`
-- [ ] ISO 27001: Filenames sanitizados; MIME verificado; path traversal bloqueado
+- [x] Parse multipart com N fields + N files
+- [x] Extrai metadados em `req.files` (`filename`, `content_type`, `size`, `path`)
+- [x] Validação: rejeita MIME não-whitelist (ex: .exe)
+- [x] File size limit: rejeita > 100MB (configurável)
+- [x] Armazena em `uploads/id_filename` com provider local padrão
+- [x] Cleanup: remove arquivos temporários após resposta por `request_id`
+- [x] Erro handling: 413 Payload Too Large, 400 Bad Request
+- [x] Testes: `tests/multipart_spec.lua`, `tests/file_validator_spec.lua`, `tests/file_storage_spec.lua`, `tests/file_manager_spec.lua`, `tests/adapter_cgi_multipart_spec.lua`, `tests/nika_upload_flow_spec.lua`
+- [x] ISO 27001: Filenames sanitizados; MIME verificado; path traversal bloqueado
 
 ---
 
@@ -570,8 +571,8 @@ Fase 10 (Router + Context)
 
 ## Próximas Ações Imediatas (Sprint 0)
 
-- [ ] Iniciar implementação Fase 11 (dataware.lua + query_builder.lua + auto_crud.lua)
-- [ ] Definir schema DSL e contrato mínimo de Model Registry
-- [ ] Criar testes estruturais para QueryBuilder e Auto-CRUD
+- [x] Iniciar implementação Fase 11 (dataware.lua + query_builder.lua + auto_crud.lua)
+- [x] Definir schema DSL e contrato mínimo de Model Registry
+- [x] Criar testes estruturais para QueryBuilder e Auto-CRUD
 - [ ] Documentar migration guide FS → Gin (release note da Fase 10)
 - [ ] Audit ISO 27001 para Fase 11 antes de merge

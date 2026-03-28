@@ -1,6 +1,19 @@
 local db = require("db")
 local dataware = require("dataware")
 
+local original_dataware_audit = package.loaded["dataware_audit"]
+
+local function reload_query_builder_with_audit_stub(stub)
+    package.loaded["query_builder"] = nil
+    package.loaded["dataware_audit"] = stub
+    return require("query_builder")
+end
+
+local function restore_query_builder_modules()
+    package.loaded["query_builder"] = nil
+    package.loaded["dataware_audit"] = original_dataware_audit
+end
+
 describe("Query Builder (Phase 11)", function()
     local calls
 
@@ -100,5 +113,59 @@ describe("Query Builder (Phase 11)", function()
         assert.is_not_nil(rows)
         assert.are.equal(2, total)
         assert.is_nil(err)
+    end)
+
+    it("audita tenant ausente em select", function()
+        local events = {}
+        local qb = reload_query_builder_with_audit_stub({
+            log_tenant_violation = function(model_name, operation)
+                events[#events + 1] = { model = model_name, operation = operation }
+            end,
+            log_create = function() end,
+            log_update = function() end,
+            log_delete = function() end
+        })
+
+        local model_def = {
+            name = "User",
+            table_name = "users",
+            require_tenant = true,
+            tenant_field = "tenant_id"
+        }
+
+        local rows, err = qb.new(model_def, {}):all()
+        restore_query_builder_modules()
+
+        assert.is_nil(rows)
+        assert.are.equal("tenant_required", err)
+        assert.are.equal(1, #events)
+        assert.are.equal("select", events[1].operation)
+    end)
+
+    it("audita tenant ausente em create", function()
+        local events = {}
+        local qb = reload_query_builder_with_audit_stub({
+            log_tenant_violation = function(model_name, operation)
+                events[#events + 1] = { model = model_name, operation = operation }
+            end,
+            log_create = function() end,
+            log_update = function() end,
+            log_delete = function() end
+        })
+
+        local model_def = {
+            name = "User",
+            table_name = "users",
+            require_tenant = true,
+            tenant_field = "tenant_id"
+        }
+
+        local result, err = qb.new(model_def, {}):create({ name = "x" })
+        restore_query_builder_modules()
+
+        assert.is_nil(result)
+        assert.are.equal("tenant_required", err)
+        assert.are.equal(1, #events)
+        assert.are.equal("create", events[1].operation)
     end)
 end)

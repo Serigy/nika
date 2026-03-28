@@ -23,6 +23,7 @@ describe("File manager (Phase 12)", function()
         assert.is_nil(err)
         assert.are.equal(1, #files)
         assert.is_not_nil(files[1].id)
+        assert.is_not_nil(files[1].path)
     end)
 
     it("bloqueia upload invalido", function()
