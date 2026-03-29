@@ -23,6 +23,10 @@ local SPEC_MODULES = {
     "tests.auto_crud_spec",
     "tests.sqlite_driver_spec",
     "tests.sqlite_dataware_integration_spec",
+    -- Phase 14: Validation + Binding + Security middleware
+    "tests.validator_spec",
+    "tests.binder_spec",
+    "tests.security_middleware_spec",
     -- Phase 12: File upload foundation
     "tests.multipart_spec",
     "tests.file_validator_spec",
