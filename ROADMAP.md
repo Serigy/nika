@@ -374,7 +374,7 @@ end)
 
 ---
 
-## Fase 13: Error Handling + Route Grouping (Semanas 7-8) — 🔄 In Progress
+## Fase 13: Error Handling + Route Grouping (Semanas 7-8) — ✅ Concluída
 
 **Objetivo:** Error handler centralizado, route grouping com middleware scope, versionamento API.
 
@@ -400,8 +400,8 @@ end)
 
 | Arquivo | Responsabilidade | Status |
 |---------|------------------|--------|
-| `src/error_handler.lua` | Centralizador com custom formatters (JSON, HTML, XML) | 🔄 |
-| `src/error_formatter.lua` | JSON, XML, HTML; stack trace only in dev | 🔄 |
+| `src/error_handler.lua` | Centralizador com custom formatters (JSON, HTML, XML) | ✅ |
+| `src/error_formatter.lua` | JSON, XML, HTML; stack trace only in dev | ✅ |
 
 ### Sintaxe Nova (Nika)
 
@@ -436,7 +436,7 @@ api_v2.get("/users/:id", get_user_v2_handler)
 - [x] Route groups com prefix correto: `/api/v1/users/:id`
 - [x] Middleware por grupo (não herda global)
 - [x] Error handler responde com Content-Negotiation (Accept header)
-- [x] Testes: `test_error_handler_spec.lua`, `test_route_group_spec.lua`, `test_nika_middleware_error_flow_spec.lua`, `test_nika_stress_errors_spec.lua`
+- [x] Testes: `tests/error_handler_spec.lua`, `tests/route_group_spec.lua`, `tests/nika_middleware_error_flow_spec.lua`, `tests/nika_stress_errors_spec.lua`
 - [x] ISO 27001: Stack trace nunca exposto em produção (validado em `history/PHASE13_ISO27001_VALIDATION.md`)
 
 ---

@@ -18,8 +18,11 @@ local SPEC_MODULES = {
     "tests.dataware_spec",
     "tests.dataware_audit_spec",
     "tests.dataware_tenancy_spec",
+    "tests.db_transaction_spec",
     "tests.query_builder_spec",
     "tests.auto_crud_spec",
+    "tests.sqlite_driver_spec",
+    "tests.sqlite_dataware_integration_spec",
     -- Phase 12: File upload foundation
     "tests.multipart_spec",
     "tests.file_validator_spec",

@@ -10,6 +10,8 @@ local middleware_chain = require("middleware_chain")
 local router_v2 = require("router_v2")
 local route_group = require("route_group")
 local dataware = require("dataware")
+local db = require("db")
+local sqlite_driver = require("sqlite_driver")
 local file_manager = require("file_manager")
 local error_handler = require("error_handler")
 
@@ -328,6 +330,41 @@ end
 
 function M.clear_models()
     return dataware.clear()
+end
+
+-- Inicializa Dataware com driver SQLite (backend de referencia)
+-- opts:
+--   db_path: caminho do arquivo sqlite (default :memory:)
+--   sqlite_module: modulo lsqlite3 injetado (opcional)
+--   connection: conexao sqlite ja aberta (opcional)
+function M.init_dataware_sqlite(opts)
+    opts = opts or {}
+
+    local driver = nil
+    local err = nil
+
+    if opts.connection ~= nil then
+        driver, err = sqlite_driver.new(opts.connection)
+    else
+        driver, err = sqlite_driver.from_lsqlite3(opts.db_path or ":memory:", opts.sqlite_module)
+    end
+
+    if not driver then
+        log_error("Falha ao inicializar driver SQLite", {
+            error = tostring(err)
+        })
+        return nil, err
+    end
+
+    local ok, set_err = db.set_driver(driver)
+    if not ok then
+        log_error("Falha ao configurar driver no wrapper db", {
+            error = tostring(set_err)
+        })
+        return nil, set_err
+    end
+
+    return true
 end
 
 function M.set_error_handler(handler_fn)

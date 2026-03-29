@@ -22,6 +22,57 @@ local function send_json(res, status, payload)
     res.body = json_util.encode(payload)
 end
 
+local function map_error_to_status(err, fallback_status)
+    local code = tostring(err or "")
+
+    if code == "tenant_required" then
+        return 403
+    end
+
+    if code == "db_constraint_violation" then
+        return 409
+    end
+
+    if code == "db_busy" or code == "db_locked" then
+        return 503
+    end
+
+    if code == "where_required_for_update" or code == "where_required_for_delete" then
+        return 400
+    end
+
+    return fallback_status or 500
+end
+
+local ERROR_MESSAGES = {
+    tenant_required = "Tenant context required",
+    not_found = "Resource not found",
+    body_table_required = "Request body table is required",
+    invalid_request = "Invalid request",
+    db_constraint_violation = "Database constraint violation",
+    db_busy = "Database temporarily busy",
+    db_locked = "Database temporarily locked",
+    where_required_for_update = "Update requires filters",
+    where_required_for_delete = "Delete requires filters",
+    list_failed = "Failed to list resources",
+    create_failed = "Failed to create resource",
+    update_failed = "Failed to update resource",
+    delete_failed = "Failed to delete resource"
+}
+
+local function is_retryable_error(code)
+    return code == "db_busy" or code == "db_locked"
+end
+
+local function send_error(res, status, code, fallback_message)
+    local normalized_code = tostring(code or "unknown_error")
+    send_json(res, status, {
+        code = normalized_code,
+        message = ERROR_MESSAGES[normalized_code] or fallback_message or "Internal Error",
+        retryable = is_retryable_error(normalized_code)
+    })
+end
+
 local function resolve_tenant(req, res, opts)
     local context = {}
     local middleware = opts.tenant_middleware or dataware_tenancy.create_middleware(opts.tenant_extractor)
@@ -32,7 +83,7 @@ local function resolve_tenant(req, res, opts)
 
     local tenant_id = context.tenant_id or dataware_tenancy.extract_tenant_id(req, opts.tenant_extractor)
     if not tenant_id then
-        send_json(res, 403, { error = "tenant_required" })
+        send_error(res, 403, "tenant_required")
         return nil, true
     end
 
@@ -83,7 +134,8 @@ function M.generate(model, router, opts)
 
         local rows, total, err = model:find(nil, { tenant_id = tenant_id }):paginate(page, per_page)
         if not rows then
-            send_json(res, 500, { error = err or "list_failed" })
+            local code = err or "list_failed"
+            send_error(res, map_error_to_status(code, 500), code)
             return res
         end
 
@@ -105,12 +157,12 @@ function M.generate(model, router, opts)
 
         local row, err = model:find(req.params and req.params.id, { tenant_id = tenant_id }):first()
         if err then
-            send_json(res, 500, { error = err })
+            send_error(res, map_error_to_status(err, 500), err)
             return res
         end
 
         if not row then
-            send_json(res, 404, { error = "not_found" })
+            send_error(res, 404, "not_found")
             return res
         end
 
@@ -126,13 +178,14 @@ function M.generate(model, router, opts)
 
         local payload, payload_err = get_payload(req)
         if not payload then
-            send_json(res, 400, { error = payload_err })
+            send_error(res, 400, payload_err)
             return res
         end
 
         local result, err = model:create(payload, { tenant_id = tenant_id })
         if not result then
-            send_json(res, 500, { error = err or "create_failed" })
+            local code = err or "create_failed"
+            send_error(res, map_error_to_status(code, 500), code)
             return res
         end
 
@@ -148,13 +201,14 @@ function M.generate(model, router, opts)
 
         local payload, payload_err = get_payload(req)
         if not payload then
-            send_json(res, 400, { error = payload_err })
+            send_error(res, 400, payload_err)
             return res
         end
 
         local result, err = model:find(req.params and req.params.id, { tenant_id = tenant_id }):update(payload)
         if not result then
-            send_json(res, 500, { error = err or "update_failed" })
+            local code = err or "update_failed"
+            send_error(res, map_error_to_status(code, 500), code)
             return res
         end
 
@@ -170,7 +224,8 @@ function M.generate(model, router, opts)
 
         local result, err = model:find(req.params and req.params.id, { tenant_id = tenant_id }):delete()
         if not result then
-            send_json(res, 500, { error = err or "delete_failed" })
+            local code = err or "delete_failed"
+            send_error(res, map_error_to_status(code, 500), code)
             return res
         end
 

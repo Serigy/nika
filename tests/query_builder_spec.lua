@@ -168,4 +168,111 @@ describe("Query Builder (Phase 11)", function()
         assert.are.equal(1, #events)
         assert.are.equal("create", events[1].operation)
     end)
+
+    it("audita tenant ausente em update", function()
+        local events = {}
+        local qb = reload_query_builder_with_audit_stub({
+            log_tenant_violation = function(model_name, operation)
+                events[#events + 1] = { model = model_name, operation = operation }
+            end,
+            log_create = function() end,
+            log_update = function() end,
+            log_delete = function() end
+        })
+
+        local model_def = {
+            name = "User",
+            table_name = "users",
+            require_tenant = true,
+            tenant_field = "tenant_id"
+        }
+
+        local result, err = qb.new(model_def, {}):where("id", "=", 10):update({ name = "x" })
+        restore_query_builder_modules()
+
+        assert.is_nil(result)
+        assert.are.equal("tenant_required", err)
+        assert.are.equal(1, #events)
+        assert.are.equal("update", events[1].operation)
+    end)
+
+    it("audita tenant ausente em delete", function()
+        local events = {}
+        local qb = reload_query_builder_with_audit_stub({
+            log_tenant_violation = function(model_name, operation)
+                events[#events + 1] = { model = model_name, operation = operation }
+            end,
+            log_create = function() end,
+            log_update = function() end,
+            log_delete = function() end
+        })
+
+        local model_def = {
+            name = "User",
+            table_name = "users",
+            require_tenant = true,
+            tenant_field = "tenant_id"
+        }
+
+        local result, err = qb.new(model_def, {}):where("id", "=", 10):delete()
+        restore_query_builder_modules()
+
+        assert.is_nil(result)
+        assert.are.equal("tenant_required", err)
+        assert.are.equal(1, #events)
+        assert.are.equal("delete", events[1].operation)
+    end)
+
+    it("aplica tenant automaticamente em update e delete", function()
+        local user = dataware.model("User")
+            :table("users")
+            :tenant("tenant_id")
+
+        local update_result, update_err = user:find(nil, { tenant_id = "t-1" })
+            :where("id", "=", 42)
+            :update({ name = "Jane" })
+
+        assert.is_not_nil(update_result)
+        assert.is_nil(update_err)
+        assert.is_true(calls[1].sql:find("UPDATE users SET", 1, true) ~= nil)
+        assert.is_true(calls[1].sql:find("tenant_id = %?") ~= nil)
+
+        local delete_result, delete_err = user:find(nil, { tenant_id = "t-1" })
+            :where("id", "=", 42)
+            :delete()
+
+        assert.is_not_nil(delete_result)
+        assert.is_nil(delete_err)
+        assert.is_true(calls[2].sql:find("DELETE FROM users", 1, true) ~= nil)
+        assert.is_true(calls[2].sql:find("tenant_id = %?") ~= nil)
+    end)
+
+    it("suporta tenant field customizado", function()
+        local account_user = dataware.model("AccountUser")
+            :table("account_users")
+            :tenant("account_id")
+
+        local sql, params, err = account_user:find(nil, { tenant_id = "acc-1" })
+            :where("active", "=", true)
+            :debug_sql()
+
+        assert.is_nil(err)
+        assert.is_true(sql:find("account_id = %?") ~= nil)
+        assert.are.equal("acc-1", params[2])
+    end)
+
+    it("mantem payload hostil em LIKE como parametro", function()
+        local user = dataware.model("User")
+            :table("users")
+            :tenant("tenant_id")
+
+        local payload = "%'; DROP TABLE users; --%"
+        local sql, params, err = user:find(nil, { tenant_id = "t-like" })
+            :where("name", "LIKE", payload)
+            :debug_sql()
+
+        assert.is_nil(err)
+        assert.is_true(sql:find("name LIKE %?") ~= nil)
+        assert.are.equal(payload, params[3])
+    end)
 end)
