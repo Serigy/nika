@@ -12,6 +12,11 @@ local route_group = require("route_group")
 local dataware = require("dataware")
 local db = require("db")
 local sqlite_driver = require("sqlite_driver")
+local validator = require("validator")
+local binder = require("binder")
+local middleware_cors = require("middleware_cors")
+local middleware_csrf = require("middleware_csrf")
+local middleware_ratelimit = require("middleware_ratelimit")
 local file_manager = require("file_manager")
 local error_handler = require("error_handler")
 
@@ -365,6 +370,36 @@ function M.init_dataware_sqlite(opts)
     end
 
     return true
+end
+
+-- Phase 14: validation + binding helpers
+function M.validator_schema(schema_def)
+    return validator.schema(schema_def)
+end
+
+function M.validate(payload, schema_def, opts)
+    return validator.validate(payload, schema_def, opts)
+end
+
+function M.bind(req, schema_def, opts)
+    return binder.bind(req, schema_def, opts)
+end
+
+function M.validate_and_bind(req, schema_def, opts)
+    return binder.bind(req, schema_def, opts)
+end
+
+-- Phase 14: security middleware factories
+function M.middleware_cors(opts)
+    return middleware_cors.create(opts)
+end
+
+function M.middleware_csrf(opts)
+    return middleware_csrf.create(opts)
+end
+
+function M.middleware_ratelimit(opts)
+    return middleware_ratelimit.create(opts)
 end
 
 function M.set_error_handler(handler_fn)

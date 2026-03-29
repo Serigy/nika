@@ -441,7 +441,7 @@ api_v2.get("/users/:id", get_user_v2_handler)
 
 ---
 
-## Fase 14: Validation + Binding + Security Middleware (Semanas 9-10) — 🔄 Next Priority
+## Fase 14: Validation + Binding + Security Middleware (Semanas 9-10) — ✅ Concluída
 
 **Objetivo:** Request validation, JSON/form binding, CORS/CSRF/rate-limit nativos.
 
@@ -466,11 +466,11 @@ api_v2.get("/users/:id", get_user_v2_handler)
 
 | Arquivo | Responsabilidade | Status |
 |---------|------------------|--------|
-| `src/validator.lua` | JSON schema, form schema, custom rules | ⏳ |
-| `src/binder.lua` | JSON → Lua table; form data → Lua table | ⏳ |
-| `src/middleware_cors.lua` | CORS headers (Access-Control-Allow-*) | ⏳ |
-| `src/middleware_csrf.lua` | CSRF token generation + validation | ⏳ |
-| `src/middleware_ratelimit.lua` | Token bucket per-IP/per-user | ⏳ |
+| `src/validator.lua` | Schema validator declarativo com limites de payload | ✅ |
+| `src/binder.lua` | Binding de `req.body_table`/`req.form_data` com coerção segura | ✅ |
+| `src/middleware_cors.lua` | CORS allow-list + preflight `OPTIONS` | ✅ |
+| `src/middleware_csrf.lua` | CSRF double-submit cookie+header para métodos mutáveis | ✅ |
+| `src/middleware_ratelimit.lua` | Rate-limit in-memory por IP com `429` + `Retry-After` | ✅ |
 
 ### Sintaxe Nova (Nika)
 
@@ -484,7 +484,7 @@ local UserCreateSchema = validator.schema({
 
 -- Handler com validação + binding
 router.post("/api/users", function(req, res)
-  local user_data, errors = req.validate_and_bind(UserCreateSchema)
+  local user_data, errors = nika.validate_and_bind(req, UserCreateSchema)
   if errors then
     return res.status(400).json({errors = errors})
   end
@@ -510,13 +510,13 @@ router:use(middleware_ratelimit({
 
 ### Definition of Done
 
-- [ ] Schema validator rejeita payload inválido com mensagens claras
-- [ ] Binder: JSON/form → Lua table automático
-- [ ] CORS: preflight (OPTIONS) respondido; origin validation
-- [ ] CSRF: token não previsível; validação em POST/PUT/DELETE
-- [ ] Rate-limit: per-IP enforced; 429 com Retry-After
-- [ ] Testes: `test_validator_spec.lua`, `test_binder_spec.lua`, `test_security_middleware_spec.lua`
-- [ ] ISO 27001: Validator rejeita payloads > 1MB; CSRF imprevisível; rate-limit evita brute force
+- [x] Schema validator rejeita payload inválido com mensagens claras
+- [x] Binder: JSON/form → Lua table automático
+- [x] CORS: preflight (OPTIONS) respondido; origin validation
+- [x] CSRF: double-submit cookie+header em POST/PUT/PATCH/DELETE
+- [x] Rate-limit: per-IP enforced; 429 com Retry-After
+- [x] Testes: `tests/validator_spec.lua`, `tests/binder_spec.lua`, `tests/security_middleware_spec.lua`
+- [x] ISO 27001: Validator rejeita payloads > 1MB; CSRF bloqueia token inválido; rate-limit reduz brute force
 
 ---
 
@@ -575,5 +575,7 @@ Fase 10 (Router + Context)
 - [x] Iniciar implementação Fase 11 (dataware.lua + query_builder.lua + auto_crud.lua)
 - [x] Definir schema DSL e contrato mínimo de Model Registry
 - [x] Criar testes estruturais para QueryBuilder e Auto-CRUD
-- [ ] Documentar migration guide FS → Gin (release note da Fase 10)
-- [ ] Audit ISO 27001 para Fase 11 antes de merge
+- [x] Documentar migration guide FS → Router explícito (release note da Fase 10)
+- [x] Audit ISO 27001 para Fase 11 antes de merge (`history/PHASE11_ISO27001_VALIDATION.md`)
+
+**Status Sprint 0:** ✅ Concluída.
