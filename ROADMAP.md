@@ -575,5 +575,7 @@ Fase 10 (Router + Context)
 - [x] Iniciar implementação Fase 11 (dataware.lua + query_builder.lua + auto_crud.lua)
 - [x] Definir schema DSL e contrato mínimo de Model Registry
 - [x] Criar testes estruturais para QueryBuilder e Auto-CRUD
-- [ ] Documentar migration guide FS → Gin (release note da Fase 10)
-- [ ] Audit ISO 27001 para Fase 11 antes de merge
+- [x] Documentar migration guide FS → Router explícito (release note da Fase 10)
+- [x] Audit ISO 27001 para Fase 11 antes de merge (`history/PHASE11_ISO27001_VALIDATION.md`)
+
+**Status Sprint 0:** ✅ Concluída.

@@ -36,7 +36,8 @@ function M.create(opts)
     opts = opts or {}
 
     local allowed_origins = parse_allowed_origins(opts.allowed_origins)
-    local allow_methods = table.concat(opts.allowed_methods or { "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS" }, ",")
+    local allow_methods = table.concat(opts.allowed_methods or { "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS" },
+        ",")
     local allow_headers = table.concat(opts.allowed_headers or { "Content-Type", "Authorization", "X-CSRF-Token" }, ",")
     local allow_credentials = opts.allow_credentials == true
 
